@@ -1,0 +1,23 @@
+mv ../acts/5-operator/operator.tf .
+$EDITOR policy.hujson
+tofu apply
+
+scp ../acts/5-operator/operator-values.yaml root@k3s1.demo.onpremise.no:
+
+# on k3s1.demo.onpremise.no:
+kubectl create namespace tailscale
+
+ssh root@k3s1.demo.onpremise.no kubectl -n tailscale create secret generic operator-oauth --from-literal=client_id=(tofu output -raw operator_client_id) --from-literal=client_secret=(tofu output -raw operator_client_secret)
+
+# on k3s1.demo.onpremise.no:
+helm repo add tailscale https://pkgs.tailscale.com/helmcharts
+helm upgrade --install tailscale-operator tailscale/tailscale-operator --version 1.104.1 -n tailscale -f operator-values.yaml --wait
+
+while not tailscale status | grep -q tailscale-operator; sleep 1; end
+tailscale configure kubeconfig tailscale-operator
+
+# on server1.demo.onpremise.no:
+tailscale configure kubeconfig tailscale-operator
+kubectl auth whoami
+kubectl get nodes
+cat ~/.kube/config

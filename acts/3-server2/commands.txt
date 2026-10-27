@@ -1,0 +1,11 @@
+mv ../acts/3-server2/server2.tf .
+
+tofu output -raw server2_password | pbcopy
+ssh root@server2.demo.headscale.no
+
+$EDITOR policy.hujson
+tofu apply
+
+# on server1.demo.onpremise.no:
+ssh server2
+

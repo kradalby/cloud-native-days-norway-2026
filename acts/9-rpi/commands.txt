@@ -1,0 +1,18 @@
+mv ../acts/9-rpi/rpi4.tf .
+tofu apply
+echo -n sudo tailscale up --login-server=https://vpn.demo.headscale.no --auth-key=(tofu output -raw rpi4_key) --ssh --hostname=rpi4 | pbcopy
+
+$EDITOR policy.hujson
+tofu apply
+
+scp ../guestbook/guestbook-arm64 root@rpi4.demo.onpremise.no:guestbook
+
+# on rpi4.demo.onpremise.no:
+systemd-run --unit=guestbook /root/guestbook -instance pi -listen :80
+
+open http://rpi4.demo.onpremise.no
+
+gh variable set PI --body 1
+git commit --allow-empty -m "Hello from the Pi"
+git push
+gh run watch

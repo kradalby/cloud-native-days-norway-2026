@@ -1,0 +1,45 @@
+server_url: https://vpn.demo.headscale.no
+listen_addr: :443
+metrics_listen_addr: 127.0.0.1:9090
+disable_check_updates: true
+
+tls:
+  acme:
+    hostname: vpn.demo.headscale.no
+
+noise:
+  private_key_path: /var/lib/headscale/noise_private.key
+
+prefixes:
+  v4: 100.64.0.0/10
+  v6: fd7a:115c:a1e0::/48
+
+derp:
+  urls:
+    - https://controlplane.tailscale.com/derpmap/default
+
+database:
+  type: sqlite
+  sqlite:
+    path: /var/lib/headscale/db.sqlite
+
+# tailscale_acl writes the policy through the API.
+policy:
+  mode: database
+
+dns:
+  magic_dns: true
+  base_domain: demo.onpremise.no
+  nameservers:
+    global:
+      - 1.1.1.1
+  # tailscale cert: headscale writes the DNS-01 records to Gigahost.
+  certificates:
+    enabled: true
+  challenge:
+    provider:
+      name: gigahost
+      api_key_path: /etc/headscale/gigahost-api-key
+
+unix_socket: /var/run/headscale/headscale.sock
+unix_socket_permission: "0770"

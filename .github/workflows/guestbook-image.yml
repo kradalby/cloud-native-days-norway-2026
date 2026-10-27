@@ -1,0 +1,33 @@
+name: guestbook-image
+
+on:
+  push:
+    branches: [main]
+    paths: [guestbook/**]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  ko:
+    runs-on: ubuntu-latest
+    env:
+      KO_DOCKER_REPO: ghcr.io/kradalby/guestbook
+    defaults:
+      run:
+        working-directory: guestbook
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: guestbook/go.mod
+          cache-dependency-path: guestbook/go.sum
+      - uses: ko-build/setup-ko@v0.10
+      # setup-ko skips its own login when KO_DOCKER_REPO is set.
+      - run: |
+          echo "$GH_TOKEN" | ko login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          ko build --bare .
+        env:
+          GH_TOKEN: ${{ github.token }}

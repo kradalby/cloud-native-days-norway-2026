@@ -1,0 +1,8 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+.direnv/
+acts/1-headscale/src/
+acts/1-headscale/headscale.deb
+guestbook/guestbook-*
+result

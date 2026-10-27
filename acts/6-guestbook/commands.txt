@@ -1,0 +1,12 @@
+tailscale configure kubeconfig tailscale-operator
+kubectl apply -f ../acts/6-guestbook/guestbook.yaml
+
+$EDITOR policy.hujson
+tofu apply
+
+while not tailscale status | grep -q guestbook; sleep 1; end
+
+# on vpn.demo.headscale.no:
+headscale nodes list
+
+open http://guestbook.demo.onpremise.no

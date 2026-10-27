@@ -1,0 +1,18 @@
+for h in vpn server1 server2 k3s1 k3s2 k3s3 rpi4; ssh-keygen -R $h.demo.headscale.no; ssh-keygen -R $h.demo.onpremise.no; end
+ssh -G server1.demo.onpremise.no | grep -i stricthostkeychecking
+
+tofu providers lock -fs-mirror=$GIGAHOST_PROVIDER_MIRROR -platform=(tofu version -json | jq -r .platform) registry.opentofu.org/kradalby/gigahost
+tofu init
+tofu apply -exclude=tailscale_acl.policy
+nix build --no-link path:../acts/4-k3s/nixos#nixosConfigurations.k3s.pkgs.k3s path:../acts/4-k3s/nixos#nixosConfigurations.k3s.pkgs.kubernetes-helm
+
+test -e ../acts/1-headscale/headscale.deb; or ../acts/1-headscale/build.sh
+scp ../acts/1-headscale/headscale.deb ../acts/1-headscale/config.yaml root@vpn.demo.headscale.no:
+setec -s https://setec.dalby.ts.net get gigahost/demo/dns-api-token | ssh root@vpn.demo.headscale.no 'cat > gigahost-api-key'
+
+# on server1.demo.headscale.no:
+apt-get install -y kubectl
+
+env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go -C ../guestbook build -o guestbook-arm64 .
+env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go -C ../guestbook build -o guestbook-amd64 .
+scp ../guestbook/guestbook-amd64 root@server1.demo.headscale.no:guestbook

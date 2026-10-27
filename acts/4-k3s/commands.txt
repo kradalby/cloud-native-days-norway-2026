@@ -1,0 +1,11 @@
+mv ../acts/4-k3s/k3s-join.tf .
+$EDITOR policy.hujson
+tofu apply
+tailscale status
+
+# This is a bit slow...
+$EDITOR ../acts/4-k3s/nixos/configuration.nix
+tofu apply
+
+# on k3s1.demo.onpremise.no:
+kubectl get nodes -o wide

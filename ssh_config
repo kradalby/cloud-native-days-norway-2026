@@ -1,0 +1,4 @@
+# Include from ~/.ssh/config. Demo hosts come and go and reuse IPs: take a new
+# host's key without a prompt on stage.
+Host *.demo.headscale.no *.demo.onpremise.no
+    StrictHostKeyChecking accept-new

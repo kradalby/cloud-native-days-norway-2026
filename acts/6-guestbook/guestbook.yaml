@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guestbook
+spec:
+  selector:
+    matchLabels:
+      app: guestbook
+  template:
+    metadata:
+      labels:
+        app: guestbook
+    spec:
+      containers:
+        - name: guestbook
+          image: ghcr.io/kradalby/guestbook:latest
+          args: ["-instance", "k8s"]
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guestbook
+  annotations:
+    # The operator puts the Service on the tailnet as its own node (tag:k8s).
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: guestbook
+spec:
+  selector:
+    app: guestbook
+  ports:
+    - port: 80
+      targetPort: 8080

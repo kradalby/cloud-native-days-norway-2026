@@ -1,0 +1,11 @@
+$EDITOR policy.hujson
+tofu apply
+
+# on vpn.demo.headscale.no:
+headscale preauthkeys create --tags tag:server
+
+# on server1.demo.headscale.no:
+tailscale up --login-server=https://vpn.demo.headscale.no --ssh --accept-routes --accept-dns --auth-key=
+
+tailscale status
+ssh root@server1.demo.onpremise.no hostname

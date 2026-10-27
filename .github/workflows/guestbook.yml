@@ -1,0 +1,36 @@
+name: guestbook
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visit:
+    runs-on: ubuntu-latest
+    env:
+      # Pushes stay green until act 8 sets the secret.
+      HAS_KEY: ${{ secrets.HEADSCALE_AUTHKEY != '' }}
+    steps:
+      - uses: actions/checkout@v7
+        if: env.HAS_KEY == 'true'
+
+      # authkey, not oauth-secret: oauth-secret appends its own ?… and breaks
+      # the baseURL that points the OAuth exchange at headscale.
+      - uses: tailscale/github-action@v4.2.0
+        if: env.HAS_KEY == 'true'
+        with:
+          authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
+          args: --login-server=https://vpn.demo.headscale.no --advertise-tags=tag:ci
+          hostname: github-${{ github.run_number }}
+
+      - run: acts/8-ci/visit.sh
+        if: env.HAS_KEY == 'true'
+        env:
+          RUN: ${{ github.run_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ACTOR: ${{ github.actor }}
+          SHA: ${{ github.sha }}
+          PI: ${{ vars.PI }}

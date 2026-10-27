@@ -1,0 +1,10 @@
+mv ../acts/7-tsnet/guestbook.tf .
+$EDITOR policy.hujson
+tofu apply
+ssh root@server1.demo.onpremise.no systemd-run --unit=guestbook-tsnet -E TS_AUTHKEY=(tofu output -raw guestbook_key) /root/guestbook -instance tsnet -tsnet guestbook-tsnet -control https://vpn.demo.headscale.no -state /var/lib/guestbook-tsnet -listen :80
+while not tailscale status | grep -q guestbook-tsnet; sleep 1; end
+
+# on vpn.demo.headscale.no:
+headscale nodes list
+
+open http://guestbook-tsnet.demo.onpremise.no

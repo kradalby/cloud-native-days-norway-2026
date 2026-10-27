@@ -1,0 +1,8 @@
+mv ../acts/8-ci/github.tf .
+$EDITOR policy.hujson
+tofu apply
+gh secret set HEADSCALE_AUTHKEY --body "tskey-client-$(tofu output -raw github_oauth_client_secret | sed s/^hskey-client-//)?baseURL=https://vpn.demo.headscale.no"
+
+git commit --allow-empty -m "Hello Cloud Native Days Norway"
+git push
+gh run watch

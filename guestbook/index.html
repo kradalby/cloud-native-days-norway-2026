@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>guestbook</title>
+<link rel="icon" href="logo.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&display=swap">
+<style>
+  /* The headscale logo: white space, a thin lowercase geometric wordmark,
+     pink and grey dots, heavy dark brackets. */
+  :root {
+    --pink: #f8b5cb;
+    --grey: #8d8d8d;
+    --light: #a2a2a2;
+    --line: #ececec;
+    --ink: #303030;
+    --bad: #e0245e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #fff;
+    color: var(--ink);
+    font: 300 22px/1.4 Jost, "Century Gothic", Futura, system-ui, sans-serif;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .8em; }
+
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 2rem;
+    padding: 2rem 3rem 1.5rem;
+  }
+  .logo { height: 72px; }
+  .word { margin: 0; font-size: 3.6rem; font-weight: 300; line-height: 1; color: var(--grey); letter-spacing: .02em; }
+  .word b { font-weight: 300; color: var(--pink); }
+  .where { color: var(--grey); font-size: 1.1rem; }
+  .where strong { color: var(--ink); font-weight: 500; }
+  .count { margin-left: auto; display: flex; align-items: center; gap: .6rem; color: var(--grey); }
+  .count span { font-size: 3rem; line-height: 1; color: var(--ink); }
+  .count i { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: var(--pink); }
+
+  main { display: flex; gap: 3rem; padding: 1rem 3rem 3rem; align-items: flex-start; }
+  #wall { flex: 1; min-width: 0; }
+  aside { width: 21rem; flex-shrink: 0; }
+  @media (max-width: 900px) {
+    header, main { padding-left: 1rem; padding-right: 1rem; }
+    main { flex-direction: column; }
+    aside { width: 100%; }
+  }
+
+  /* The logo's brackets, around the newest visit. */
+  .bracket { position: relative; padding: 1.2rem 2.6rem; }
+  .bracket::before, .bracket::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 1.1rem;
+    border: 7px solid var(--ink);
+  }
+  .bracket::before { left: 0; border-right: 0; }
+  .bracket::after { right: 0; border-left: 0; }
+
+  .visit { padding: 1.2rem 2.6rem; border-bottom: 1px solid var(--line); }
+  .visit.bracket { border-bottom: 0; margin-bottom: 1rem; }
+  .visit.new { animation: arrive .8s cubic-bezier(.2, .9, .3, 1.2); }
+  @keyframes arrive { from { transform: scale(.94); opacity: 0; } }
+
+  .head { display: flex; align-items: baseline; gap: 1rem; color: var(--grey); font-size: 1.1rem; }
+  .head a, .head span.name { color: var(--ink); font-weight: 500; text-decoration: none; }
+  .head a:hover { text-decoration: underline var(--pink) 3px; }
+  .head time { margin-left: auto; }
+  .msg { margin: .2rem 0 .5rem; font-size: 2.4rem; line-height: 1.2; overflow-wrap: anywhere; }
+  .visit:not(.bracket) .msg { font-size: 1.6rem; }
+  .meta { margin: 0; color: var(--grey); font-size: 1rem; }
+  .meta .who { color: var(--ink); }
+
+  .results { display: flex; flex-wrap: wrap; gap: .4rem 1.6rem; margin: .9rem 0 0; padding: 0; list-style: none; font-size: 1.05rem; }
+  .results li { display: flex; align-items: center; gap: .5rem; }
+  .results small { color: var(--grey); }
+  .results li.bad { color: var(--bad); font-weight: 500; }
+
+  /* Dots, as in the logo: pink got through, grey dots never saw it, ink was stopped. */
+  .d { width: .9em; height: .9em; border-radius: 50%; flex-shrink: 0; }
+  .d.reached { background: var(--pink); }
+  .d.hidden { background: radial-gradient(circle, var(--light) 28%, transparent 30%) 0 0 / 50% 50%; }
+  .d.blocked { border: 3px solid var(--ink); }
+  .d.on { background: var(--pink); }
+  .d.off { border: 2px solid var(--light); }
+
+  .legend { display: flex; gap: 1.6rem; margin: 0 2.6rem 1.5rem; color: var(--grey); font-size: .95rem; }
+  .legend span { display: flex; align-items: center; gap: .45rem; }
+
+  .waiting { display: flex; align-items: center; gap: 1rem; padding: 3rem 2.6rem; color: var(--grey); font-size: 1.6rem; }
+  .waiting i { width: .6em; height: .6em; border-radius: 50%; background: var(--light); animation: pulse 1.2s infinite ease-in-out; }
+  .waiting i:first-of-type { background: var(--pink); }
+  .waiting i:nth-of-type(2) { animation-delay: .2s; }
+  .waiting i:nth-of-type(3) { animation-delay: .4s; }
+  @keyframes pulse { 50% { transform: scale(.4); } }
+
+  h2 { margin: 0 0 1rem; font-size: 1.6rem; font-weight: 300; color: var(--grey); }
+  h2 b { font-weight: 300; color: var(--pink); }
+  .self { margin: 0 0 1.2rem; padding: .8rem 1.6rem; }
+  .self b { display: block; font-size: 1.4rem; font-weight: 500; }
+  .self span { color: var(--grey); font-size: 1rem; }
+  .peers { margin: 0; padding: 0; list-style: none; }
+  .peers li { display: flex; align-items: center; gap: .6rem; padding: .35rem 0; flex-wrap: wrap; }
+  .peers b { font-weight: 500; }
+  .peers small { color: var(--grey); }
+
+  #confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  #confetti i { position: absolute; top: -40px; border-radius: 50%; animation: fall var(--t) cubic-bezier(.3, .6, .6, 1) forwards; }
+  @keyframes fall { to { transform: translate(var(--dx), 110vh); } }
+  @media (prefers-reduced-motion: reduce) { .visit.new, #confetti i, .waiting i { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="logo.svg" alt="headscale">
+  <h1 class="word"><b>g</b>uestbook</h1>
+  <span class="where" id="where"></span>
+  <span class="count"><i></i><span id="count">0</span> visits</span>
+</header>
+<main>
+  <section id="wall">
+    <p class="waiting"><i></i><i></i><i></i> waiting for visitors</p>
+  </section>
+  <aside id="tailnet" hidden>
+    <h2><b>i</b>nside the tailnet</h2>
+    <p class="self bracket" id="self"></p>
+    <ul class="peers" id="peers"></ul>
+  </aside>
+</main>
+<div id="confetti"></div>
+<script>
+  const words = { reached: "reached", hidden: "hidden", blocked: "blocked" };
+  const dots = ["#f8b5cb", "#f8b5cb", "#8d8d8d", "#a2a2a2", "#303030"];
+  let last = null;
+
+  // Text only through textContent: messages come from outside.
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function visit(v, i) {
+    const c = el("article", "visit" + (i === 0 ? " bracket" : ""));
+    const head = c.appendChild(el("div", "head"));
+    const title = v.name + (v.run ? " run #" + v.run : "");
+    if (v.url && v.url.startsWith("https://")) {
+      const a = head.appendChild(el("a", "", title));
+      a.href = v.url;
+    } else {
+      head.appendChild(el("span", "name", title));
+    }
+    if (v.actor) head.appendChild(el("span", "", "@" + v.actor));
+    if (v.sha) head.appendChild(el("span", "mono", v.sha.slice(0, 7)));
+    head.appendChild(el("time", "mono", new Date(v.time).toLocaleTimeString()));
+
+    if (v.message) c.appendChild(el("p", "msg", v.message));
+
+    const m = c.appendChild(el("p", "meta"));
+    if (v.who) {
+      m.append("tailscale says ");
+      m.appendChild(el("span", "who", [v.who.node, ...(v.who.tags || []), v.who.user].filter(Boolean).join(" · ")));
+      m.append(" · " + [v.who.os, v.who.version].filter(Boolean).join(" "));
+    } else if (v.from) {
+      m.append("from ");
+      m.appendChild(el("span", "mono", v.from));
+    }
+
+    if (v.results && v.results.length) {
+      const ul = c.appendChild(el("ul", "results"));
+      for (const r of v.results) {
+        const ok = (r.want === "reach") === (r.got === "reached");
+        const li = ul.appendChild(el("li", ok ? "" : "bad"));
+        li.append(el("i", "d " + r.got), r.target + " ", el("small", "", ok ? words[r.got] || r.got : "expected " + r.want));
+      }
+    }
+    return c;
+  }
+
+  function legend() {
+    const l = el("div", "legend");
+    for (const [k, w] of Object.entries(words)) {
+      const s = l.appendChild(el("span"));
+      s.append(el("i", "d " + k), w);
+    }
+    return l;
+  }
+
+  function confetti() {
+    const box = document.getElementById("confetti");
+    for (let i = 0; i < 50; i++) {
+      const d = el("i");
+      const size = 10 + Math.random() * 30;
+      d.style.cssText = `left:${Math.random() * 100}vw;width:${size}px;height:${size}px;` +
+        `background:${dots[i % dots.length]};--t:${1.4 + Math.random() * 1.2}s;--dx:${(Math.random() - .5) * 20}vw;` +
+        `animation-delay:${Math.random() * .4}s`;
+      box.appendChild(d);
+      setTimeout(() => d.remove(), 3500);
+    }
+  }
+
+  function tailnet(data) {
+    if (!data.self) return;
+    document.getElementById("tailnet").hidden = false;
+    const s = data.self;
+    const self = document.getElementById("self");
+    self.replaceChildren(el("b", "", s.name), el("span", "mono", [s.ip, ...(s.tags || [])].join(" · ")));
+    document.getElementById("peers").replaceChildren(...(data.peers || []).map(p => {
+      const li = el("li");
+      li.append(el("i", "d " + (p.online ? "on" : "off")), el("b", "", p.name), el("small", "mono", [p.ip, ...(p.tags || [])].join(" ")));
+      return li;
+    }));
+  }
+
+  async function poll() {
+    try {
+      const data = await (await fetch("visits", { cache: "no-store" })).json();
+      const where = document.getElementById("where");
+      where.replaceChildren("on ", el("strong", "", data.instance), " · " + data.host + " · " + data.arch);
+      document.getElementById("count").textContent = data.visits.length;
+      document.title = "guestbook · " + data.instance;
+      tailnet(data);
+
+      const top = data.visits[0] ? data.visits[0].time : "";
+      if (top !== last) {
+        if (data.visits.length) {
+          const [first, ...rest] = data.visits.map(visit);
+          document.getElementById("wall").replaceChildren(first, legend(), ...rest);
+        }
+        if (last !== null && top) {
+          document.querySelector(".visit").classList.add("new");
+          confetti();
+        }
+        last = top;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+    setTimeout(poll, 1000);
+  }
+  poll();
+</script>
+</body>
+</html>

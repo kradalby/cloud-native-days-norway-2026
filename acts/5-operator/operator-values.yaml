@@ -1,0 +1,12 @@
+loginServer: https://vpn.demo.headscale.no
+
+apiServerProxyConfig:
+  mode: "true" # a string: the chart also takes "noauth"
+
+# Docker Hub rate-limits the shared Gigahost addresses (429).
+operatorConfig:
+  image:
+    repository: ghcr.io/tailscale/k8s-operator
+proxyConfig:
+  image:
+    repository: ghcr.io/tailscale/tailscale

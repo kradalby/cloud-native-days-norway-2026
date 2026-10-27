@@ -1,0 +1,79 @@
+{
+  "tagOwners": {
+    "tag:server": [],
+    "tag:rpi": [],
+    "tag:ci": [],
+    "tag:k3s": [],
+    "tag:k8s-operator": [],
+    "tag:k8s": ["tag:k8s-operator"],
+    "tag:guestbook": [],
+  },
+
+  // Each act uncomments the lines tagged with its number.
+  "grants": [
+    {"src": ["tag:server"], "dst": ["tag:server"], "ip": ["tcp:22"]}, // act 3
+
+    // k3s over the tailnet: API server, kubelet, flannel VXLAN.
+    {"src": ["tag:k3s"], "dst": ["tag:k3s"], "ip": ["tcp:6443", "tcp:10250", "udp:8472"]}, // act 4
+
+    // The laptop: SSH to the machines.
+    {
+      "src": ["kradalby@"],
+      "dst": [
+        "tag:server", // act 2
+        "tag:k3s", // act 4
+        // "tag:rpi", // act 9
+      ],
+      "ip": ["tcp:22"],
+    },
+
+    // The laptop: the guestbook pages.
+    {
+      "src": ["kradalby@"],
+      "dst": [
+        "tag:k8s", // act 6
+        // "tag:guestbook", // act 7
+        // "tag:rpi", // act 9
+      ],
+      "ip": ["tcp:80"],
+    },
+
+    // kubectl through the operator, as cluster admin. // act 5
+    {
+      "src": ["tag:server", "kradalby@"],
+      "dst": ["tag:k8s-operator"],
+      "ip": ["tcp:443"],
+      "app": {
+        "tailscale.com/cap/kubernetes": [
+          {"impersonate": {"groups": ["system:masters"]}},
+        ],
+      },
+    },
+
+    // CI may only sign the guestbooks.
+    {
+      "src": ["tag:ci"],
+      "dst": [
+        // "tag:k8s", // act 8
+        // "tag:guestbook", // act 8
+        // "tag:rpi", // act 9
+      ],
+      "ip": ["tcp:80"],
+    },
+  ],
+
+  // Tailscale SSH also needs the tcp:22 grants above.
+  "ssh": [
+    // {"action": "accept", "src": ["tag:server"], "dst": ["tag:server"], "users": ["root"]}, // act 3
+    {
+      "action": "accept",
+      "src": ["kradalby@"],
+      "dst": [
+        "tag:server", // act 2
+        "tag:k3s", // act 4
+        // "tag:rpi", // act 9
+      ],
+      "users": ["root"],
+    },
+  ],
+}
